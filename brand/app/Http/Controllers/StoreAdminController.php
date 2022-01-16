@@ -1,0 +1,157 @@
+<?php
+namespace App\Http\Controllers;
+use Illuminate\Http\Request;
+use Validator;
+use Illuminate\Support\Facades\Storage;
+use DB;
+use Illuminate\Support\Facades\Hash;
+use auth;
+class StoreAdminController extends Controller
+{
+    public function index(){
+        $uid=auth::user()->id;
+        $brand_id= DB::table('brand_admin')->select('brand_admin.brand_admin_id')->where('id','=',$uid)->first();
+        $brand_admin_id=$brand_id->brand_admin_id;
+        $users1 = DB::table('store_admin')->select('store_admin.*')->where("city_brand_admin_id", "like","%".$brand_admin_id."%")->orderBy('store_admin.id','desc')->get();
+        return view('storeadminlist',['users1'=>$users1,]);
+    }
+    
+    public function create()
+    {
+        $country = DB::table('countries')->select('countries.*')->get(); 
+        return view('add_store_admin_form',['country'=>$country]);
+    }
+    public function store(Request $request)
+    {
+        $this->validate($request, [
+            'name'=>'required',
+            'email'=>'required',
+            'password'=>'required',
+            'phone'=>'required',
+            'age'=>'required',
+            'gender'=>'required',
+            'country'=>'required',
+            'state'=>'required',
+            'city'=>'required',
+            'position'=>'required'
+        ]);
+        $name = (!empty($request->input('name'))) ? $request->input('name') : '';
+        $email = (!empty($request->input('email'))) ? $request->input('email') : '';
+        $password = (!empty($request->input('password'))) ? $request->input('password') : '';
+        $phone = (!empty($request->input('phone'))) ? $request->input('phone') : '';
+        $age = (!empty($request->input('age'))) ? $request->input('age') : '';
+        $gender = (!empty($request->input('gender'))) ? $request->input('gender') : '';
+        $country = (!empty($request->input('country'))) ? $request->input('country') : '';
+        $state = (!empty($request->input('state'))) ? $request->input('state') : '';
+        $city = (!empty($request->input('city'))) ? $request->input('city') : '';
+        $position = (!empty($request->input('position'))) ? $request->input('position') : '';
+        
+        $result1 = substr($city, 0, 2);
+        $result2 = substr($name, 0, 2);
+        $result3 = substr($phone,-4);
+        // $result4 = substr($store_location,0);
+        $store_admin_id = $result1.'-'.$result2.'-'.$result3;
+        
+        $uid=auth::user()->id;
+        $brand_id= DB::table('brand_admin')->select('brand_admin.brand_admin_id','brand_admin.company_id')->where('id','=',$uid)->first();
+        $brand_admin_id=$brand_id->brand_admin_id;
+        $company_admin_id = $brand_id->company_id;
+        
+        $insert = DB::table('store_admin')->insert([
+            'company_admin_id'=>$company_admin_id,
+            'city_brand_admin_id' => $brand_admin_id,
+            'store_admin_id'=>$store_admin_id,
+            'name' => $name,
+            'email'=>$email,
+            'phone' => $phone,
+            'position'=>$position,
+            'country'=>$country,
+            'state' => $state,
+            'city'=>$city,
+            'age'=>$age,
+            'gender' => $gender,
+            'password'=>Hash::make($password)
+        ]);
+        return redirect()->route('store-admin')->with('success','Store admin has been added successfully.');
+    }
+    
+    public function delete($id)
+    {
+        $insert = DB::table('store_admin')->where('id','=',$id)->delete();
+        return redirect()->route('store-admin')->with('success','Store admin has been deleted successfully.');  
+    }
+    
+    public function deleteMultiple(Request $request){
+        $ids = $request->ids;
+        DB::table('store_admin')->whereIn('id',explode(",",$ids))->delete();
+        return redirect()->back()->with('success','Selected banners has been deleted successfully.');  
+    }
+
+    public function edit($id)
+    {
+        $edituser = DB::table('store_admin')
+                    ->select('*')
+                    ->where('id', '=',$id)
+                    ->first();
+                    
+        $country = DB::table('countries')->select('countries.*')->get();  
+        return view('store_admin_form_edit',['edituser'=>$edituser,'country'=>$country]);
+    }
+    
+    public function update(Request $request)
+    {
+        $id = (!empty($request->input('id'))) ? $request->input('id') : '';
+        $name = (!empty($request->input('name'))) ? $request->input('name') : '';
+        $email = (!empty($request->input('email'))) ? $request->input('email') : '';
+        $password = (!empty($request->input('password'))) ? $request->input('password') : '';
+        $phone = (!empty($request->input('phone'))) ? $request->input('phone') : '';
+        $age = (!empty($request->input('age'))) ? $request->input('age') : '';
+        $gender = (!empty($request->input('gender'))) ? $request->input('gender') : '';
+        $country = (!empty($request->input('country'))) ? $request->input('country') : '';
+        $state = (!empty($request->input('state'))) ? $request->input('state') : '';
+        $city = (!empty($request->input('city'))) ? $request->input('city') : '';
+        $position = (!empty($request->input('position'))) ? $request->input('position') : '';
+        
+        $result1 = substr($city, 0, 2);
+        $result2 = substr($name, 0, 2);
+        $result3 = substr($phone,-4);
+        // $result4 = substr($store_location,0);
+        $store_admin_id = $result1.'-'.$result2.'-'.$result3;
+        
+        $uid=auth::user()->id;
+        $brand_id= DB::table('brand_admin')->select('brand_admin.brand_admin_id','brand_admin.company_id')->where('id','=',$uid)->first();
+        $brand_admin_id=$brand_id->brand_admin_id;
+        $company_admin_id = $brand_id->company_id;
+        
+        $insert = DB::table('store_admin')->where('id','=',$id)->update([
+            'company_admin_id'=>$company_admin_id,
+            'city_brand_admin_id' => $brand_admin_id,
+            'store_admin_id'=>$store_admin_id,
+            'name' => $name,
+            'email'=>$email,
+            'phone' => $phone,
+            'position'=>$position,
+            'country'=>$country,
+            'state' => $state,
+            'city'=>$city,
+            'age'=>$age,
+            'gender' => $gender
+        ]);
+        
+        return redirect()->route('store-admin')->with('success','Store Admin has been updated successfully.');
+    }
+    
+    public function changesadminstatus1($id){
+        $insert = DB::table('store_admin')->where('id','=',$id)->update([
+            'status' => 1
+        ]);
+        return redirect()->back()->with('success','Status has been updated successfully.');
+    }
+
+    public function changesadminstatus2($id){
+        $insert = DB::table('store_admin')->where('id','=',$id)->update([
+            'status' => 2
+        ]);
+        return redirect()->back()->with('success','Status has been updated successfully.');
+    }
+}
